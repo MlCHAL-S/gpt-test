@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        /* Styles for the loading indicator */
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .loading span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin: 0 2px;
+            background-color: #007bff;
+            border-radius: 50%;
+            animation: loading-animation 1.2s infinite ease-in-out;
+        }
+
+        .loading span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes loading-animation {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h1>Chat with Llama2</h1>
+        <div id="chat-box" class="chat-box">
+            <!-- Chat messages will appear here -->
+        </div>
+        <div class="loading" id="loading-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <form id="chat-form">
+            <input type="text" id="user-input" placeholder="Type your message..." required>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+    <script>
+        const chatForm = document.getElementById("chat-form");
+        const chatBox = document.getElementById("chat-box");
+        const userInput = document.getElementById("user-input");
+        const loadingIndicator = document.getElementById("loading-indicator");
+
+        chatForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const message = userInput.value;
+            if (!message.trim()) return;
+
+            // Display user message
+            chatBox.innerHTML += `<div class="message user">${message}</div>`;
+            userInput.value = "";
+
+            // Show loading indicator
+            loadingIndicator.style.display = "block";
+
+            // Call the Flask backend
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message })
+                });
+                const data = await response.json();
+
+                // Hide loading indicator
+                loadingIndicator.style.display = "none";
+
+                if (data.response) {
+                    chatBox.innerHTML += `<div class="message bot">${data.response}</div>`;
+                } else {
+                    chatBox.innerHTML += `<div class="message error">Error: ${data.error}</div>`;
+                }
+            } catch (err) {
+                // Hide loading indicator
+                loadingIndicator.style.display = "none";
+                chatBox.innerHTML += `<div class="message error">Error: ${err.message}</div>`;
+            }
+
+            // Scroll to the bottom of the chat
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+    </script>
+</body>
+</html>
